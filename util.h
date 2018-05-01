@@ -34,6 +34,8 @@
 #endif
 #endif
 
+#include "ruby.h"
+
 #define scan_oct ruby_scan_oct
 unsigned long scan_oct _((const char*, int, int*));
 #define scan_hex ruby_scan_hex
@@ -43,7 +45,7 @@ unsigned long scan_hex _((const char*, int, int*));
 void ruby_add_suffix();
 #endif
 
-void ruby_qsort _((void*, const int, const int, int (*)(), void*));
+void ruby_qsort _((void*, const int, const int, int (*)(VALUE*, VALUE*, void*), void*));
 #define qsort(b,n,s,c,d) ruby_qsort(b,n,s,c,d)
 
 void ruby_setenv _((const char*, const char*));

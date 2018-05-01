@@ -54,11 +54,14 @@ struct clone_method_data {
 };
 
 static int
-clone_method(mid, body, data)
+clone_method(mid, bod, dat)
     ID mid;
-    NODE *body;
-    struct clone_method_data *data;
+    void *bod;
+    void *dat;
 {
+	NODE *body = bod;
+	struct clone_method_data *data = dat;
+
     NODE *fbody = body->nd_body;
 
     if (fbody && nd_type(fbody) == NODE_SCOPE) {
@@ -576,10 +579,10 @@ ins_methods_push(name, type, ary, visi)
 static int
 ins_methods_i(name, type, ary)
     ID name;
-    long type;
-    VALUE ary;
+    void* type;
+    void* ary;
 {
-    return ins_methods_push(name, type, ary, -1); /* everything but private */
+    return ins_methods_push(name, (long)type, (VALUE)ary, -1); /* everything but private */
 }
 
 static int
@@ -603,18 +606,20 @@ ins_methods_priv_i(name, type, ary)
 static int
 ins_methods_pub_i(name, type, ary)
     ID name;
-    long type;
-    VALUE ary;
+    void* type;
+    void* ary;
 {
-    return ins_methods_push(name, type, ary, NOEX_PUBLIC);
+    return ins_methods_push(name, (long)type, (VALUE)ary, NOEX_PUBLIC);
 }
 
 static int
-method_entry(key, body, list)
+method_entry(key, bod, lis)
     ID key;
-    NODE *body;
-    st_table *list;
+    void *bod;
+    void *lis;
 {
+	NODE *body = bod;
+	st_table *list = lis;
     long type;
 
     if (key == ID_ALLOCATOR) return ST_CONTINUE;

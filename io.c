@@ -1878,11 +1878,13 @@ rb_io_set_lineno(io, lineno)
 }
 
 static void
-lineno_setter(val, id, var)
+lineno_setter(val, id, va, xxx)
     VALUE val;
     ID id;
-    VALUE *var;
+    void *va;
+	struct global_variable* xxx;
 {
+	VALUE *var = va;
     gets_lineno = NUM2INT(val);
     *var = INT2FIX(gets_lineno);
 }
@@ -2341,9 +2343,10 @@ rb_io_fptr_cleanup(fptr, noraise)
 }
 
 void
-rb_io_fptr_finalize(fptr)
-    rb_io_t *fptr;
+rb_io_fptr_finalize(fpt)
+    void* fpt;
 {
+	rb_io_t *fptr = fpt;
     if (!fptr) return;
     if (fptr->path) {
 	free(fptr->path);
@@ -2384,6 +2387,13 @@ rb_io_close(io)
     return Qnil;
 }
 
+static VALUE
+rb_io_close_p(io)
+	void* io;
+{
+	return rb_io_close((VALUE)io);
+}
+
 /*
  *  call-seq:
  *     ios.close   => nil
@@ -2412,16 +2422,16 @@ rb_io_close_m(io)
 
 static VALUE
 io_call_close(io)
-    VALUE io;
+    VALUE* io;
 {
-    return rb_funcall(io, rb_intern("close"), 0, 0);
+    return rb_funcall((VALUE)io, rb_intern("close"), 0, 0);
 }
 
 static VALUE
 io_close(io)
-    VALUE io;
+    void* io;
 {
-    return rb_rescue(io_call_close, io, 0, 0);
+    return rb_rescue(io_call_close, (VALUE)io, 0, 0);
 }
 
 /*
@@ -3416,7 +3426,7 @@ rb_io_s_popen(argc, argv, klass)
     }
     RBASIC(port)->klass = klass;
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, port, io_close, port);
+	return rb_ensure(rb_yield_p, port, io_close, port);
     }
     return port;
 }
@@ -3477,7 +3487,7 @@ rb_io_s_open(argc, argv, klass)
     VALUE io = rb_class_new_instance(argc, argv, klass);
 
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, io, io_close, io);
+	return rb_ensure(rb_yield_p, io, io_close, io);
     }
 
     return io;
@@ -3605,9 +3615,10 @@ rb_io_s_sysopen(argc, argv)
  */
 
 static VALUE
-rb_f_open(argc, argv)
+rb_f_open(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     if (argc >= 1) {
 	char *str = StringValuePtr(argv[0]);
@@ -3915,7 +3926,7 @@ rb_io_printf(argc, argv, out)
     VALUE argv[];
     VALUE out;
 {
-    rb_io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv, 0));
     return Qnil;
 }
 
@@ -3931,7 +3942,7 @@ rb_io_printf(argc, argv, out)
  */
 
 static VALUE
-rb_f_printf(argc, argv)
+rb_f_printf(argc, argv, xxx)
     int argc;
     VALUE argv[];
 {
@@ -3946,7 +3957,7 @@ rb_f_printf(argc, argv)
 	argv++;
 	argc--;
     }
-    rb_io_write(out, rb_f_sprintf(argc, argv));
+    rb_io_write(out, rb_f_sprintf(argc, argv, 0));
 
     return Qnil;
 }
@@ -4030,9 +4041,10 @@ rb_io_print(argc, argv, out)
  */
 
 static VALUE
-rb_f_print(argc, argv)
+rb_f_print(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     rb_io_print(argc, argv, rb_stdout);
     return Qnil;
@@ -4163,9 +4175,10 @@ rb_io_puts(argc, argv, out)
  */
 
 static VALUE
-rb_f_puts(argc, argv)
+rb_f_puts(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     rb_io_puts(argc, argv, rb_stdout);
     return Qnil;
@@ -4281,11 +4294,13 @@ must_respond_to(mid, val, id)
 }
 
 static void
-stdout_setter(val, id, variable)
+stdout_setter(val, id, variabl, xxx)
     VALUE val;
     ID id;
-    VALUE *variable;
+    void *variabl;
+	struct global_variable* xxx;
 {
+    VALUE *variable = variabl;
     must_respond_to(id_write, val, id);
     *variable = val;
 }
@@ -5376,11 +5391,11 @@ struct foreach_arg {
 
 static VALUE
 io_s_foreach(arg)
-    struct foreach_arg *arg;
+    void *arg;
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_getline(arg->sep, arg->io))) {
+    while (!NIL_P(str = rb_io_getline(((struct foreach_arg*)arg)->sep, ((struct foreach_arg*)arg)->io))) {
 	rb_yield(str);
     }
     return Qnil;
@@ -5425,13 +5440,14 @@ rb_io_s_foreach(argc, argv, self)
     arg.io = rb_io_open(StringValueCStr(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
 
-    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
+    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close_p, arg.io);
 }
 
 static VALUE
-io_s_readlines(arg)
-    struct foreach_arg *arg;
+io_s_readlines(ar)
+    struct foreach_arg *ar;
 {
+	struct foreach_arg* arg = ar;
     return rb_io_readlines(arg->argc, &arg->sep, arg->io);
 }
 
@@ -5463,13 +5479,14 @@ rb_io_s_readlines(argc, argv, io)
     arg.argc = argc - 1;
     arg.io = rb_io_open(StringValueCStr(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
+    return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close_p, arg.io);
 }
 
 static VALUE
-io_s_read(arg)
-    struct foreach_arg *arg;
+io_s_read(ar)
+    void *ar;
 {
+	struct foreach_arg *arg = ar;
     return io_read(arg->argc, &arg->sep, arg->io);
 }
 
@@ -5525,7 +5542,7 @@ rb_io_s_read(argc, argv, io)
 	    rb_jump_tag(state);
 	}
     }
-    return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
+    return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close_p, arg.io);
 }
 
 static VALUE

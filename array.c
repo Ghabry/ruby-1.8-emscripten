@@ -1481,9 +1481,10 @@ struct inspect_arg {
 };
 
 static VALUE
-inspect_call(arg)
-    struct inspect_arg *arg;
+inspect_call(ag)
+    void *ag;
 {
+	struct inspect_arg* arg = ag;
     return (*arg->func)(arg->arg1, arg->arg2);
 }
 
@@ -1511,7 +1512,7 @@ get_inspect_tbl(create)
 
 static VALUE
 inspect_ensure(obj)
-    VALUE obj;
+    void* obj;
 {
     VALUE inspect_tbl;
 
@@ -1735,9 +1736,10 @@ sort_2(ap, bp, data)
 }
 
 static VALUE
-sort_internal(ary)
-    VALUE ary;
+sort_internal(ar)
+    void* ar;
 {
+	VALUE ary = (void*)ar;
     struct ary_sort_data data;
 
     data.ary = ary;
@@ -1749,10 +1751,10 @@ sort_internal(ary)
 
 static VALUE
 sort_unlock(ary)
-    VALUE ary;
+    void* ary;
 {
-    FL_UNSET(ary, ARY_TMPLOCK);
-    return ary;
+    FL_UNSET((VALUE)ary, ARY_TMPLOCK);
+    return (VALUE)ary;
 }
 
 /*

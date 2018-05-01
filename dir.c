@@ -364,7 +364,7 @@ free_dir(dir)
     free(dir);
 }
 
-static VALUE dir_close _((VALUE));
+static VALUE dir_close _((void*));
 
 static VALUE dir_s_alloc _((VALUE));
 static VALUE
@@ -434,7 +434,7 @@ dir_s_open(klass, dirname)
 
     dir_initialize(dir, dirname);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, dir, dir_close, dir);
+	return rb_ensure(rb_yield_p, dir, dir_close, dir);
     }
 
     return dir;
@@ -556,9 +556,10 @@ dir_read(dir)
  *     Got main.rb
  */
 static VALUE
-dir_each(dir)
-    VALUE dir;
+dir_each(di)
+    void* di;
 {
+	VALUE dir = (VALUE)di;
     struct dir_data *dirp;
     struct dirent *dp;
 
@@ -690,11 +691,11 @@ dir_rewind(dir)
  */
 static VALUE
 dir_close(dir)
-    VALUE dir;
+    void* dir;
 {
     struct dir_data *dirp;
 
-    GetDIR(dir, dirp);
+    GetDIR((VALUE)dir, dirp);
     closedir(dirp->dir);
     dirp->dir = NULL;
 
@@ -718,9 +719,10 @@ struct chdir_data {
 };
 
 static VALUE
-chdir_yield(args)
-    struct chdir_data *args;
+chdir_yield(arg)
+    void *arg;
 {
+	struct chdir_data *args = arg;
     dir_chdir(args->new_path);
     args->done = Qtrue;
     chdir_blocking++;
@@ -730,9 +732,10 @@ chdir_yield(args)
 }
 
 static VALUE
-chdir_restore(args)
-    struct chdir_data *args;
+chdir_restore(arg)
+    struct chdir_data *arg;
 {
+	struct chdir_data *args = arg;
     if (args->done) {
 	chdir_blocking--;
 	if (chdir_blocking == 0)
@@ -1821,6 +1824,13 @@ dir_foreach(io, dirname)
     return Qnil;
 }
 
+static VALUE
+rb_Array_p(a)
+	void* a;
+{
+		return rb_Array((VALUE)a);
+}
+
 /*
  *  call-seq:
  *     Dir.entries( dirname ) => array
@@ -1839,7 +1849,7 @@ dir_entries(io, dirname)
     VALUE dir;
 
     dir = dir_open_dir(dirname);
-    return rb_ensure(rb_Array, dir, dir_close, dir);
+    return rb_ensure(rb_Array_p, dir, dir_close, dir);
 }
 
 /*

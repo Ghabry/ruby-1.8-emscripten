@@ -545,12 +545,13 @@ struct reloc_arg {
 };
 
 static int
-reloc_undef(no, undef, arg)
-    int no;
-    struct undef *undef;
-    struct reloc_arg *arg;
+reloc_undef(no, unde, ar)
+    ID no;
+    void *undef;
+    void *arg;
 {
-    int datum;
+	struct undef *undef = unde;
+    struct reloc_arg *arg = ar;
     char *address;
 #if defined(sun) && defined(sparc)
     unsigned int mask = 0;
@@ -626,11 +627,14 @@ struct indr_data {
 };
 
 static int
-reloc_repl(no, undef, data)
-    int no;
-    struct undef *undef;
-    struct indr_data *data;
+reloc_repl(no, unde, dat)
+    ID no;
+    void *undef;
+    void *data;
 {
+    struct undef *undef = unde;
+    struct indr_data *data = dat;
+
     if (strcmp(data->name0, undef->name) == 0) {
 	free(undef->name);
 	undef->name = strdup(data->name1);

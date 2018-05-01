@@ -487,7 +487,7 @@ void ruby_qsort (base, nel, size, cmp, d)
      void* base;
      const int nel;
      const int size;
-     int (*cmp)();
+     int (*cmp)(VALUE*, VALUE*, void*);
      void *d;
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */

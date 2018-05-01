@@ -1721,9 +1721,10 @@ chmod_internal(path, mode)
  */
 
 static VALUE
-rb_file_s_chmod(argc, argv)
+rb_file_s_chmod(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     VALUE vmode;
     VALUE rest;
@@ -2004,9 +2005,10 @@ utime_internal(path, arg)
  */
 
 static VALUE
-rb_file_s_utime(argc, argv)
+rb_file_s_utime(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE atime, mtime, rest;
     struct timeval tvs[2], *tvp = NULL;
@@ -2045,9 +2047,10 @@ utime_internal(path, arg)
 }
 
 static VALUE
-rb_file_s_utime(argc, argv)
+rb_file_s_utime(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE atime, mtime, rest;
     long n;
@@ -2278,9 +2281,10 @@ rb_file_s_rename(klass, from, to)
  */
 
 static VALUE
-rb_file_s_umask(argc, argv)
+rb_file_s_umask(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     int omask = 0;
 
@@ -2848,6 +2852,15 @@ rb_file_s_expand_path(argc, argv)
     return rb_file_expand_path(fname, dname);
 }
 
+static VALUE
+rb_file_s_expand_path2(argc, argv, xxx)
+    int argc;
+    VALUE *argv;
+	VALUE xxx;
+{
+	return rb_file_s_expand_path(argc, argv);
+}
+
 static int
 rmext(p, l1, e)
     const char *p, *e;
@@ -2972,9 +2985,10 @@ ruby_find_basename(name, baselen, alllen)
  */
 
 static VALUE
-rb_file_s_basename(argc, argv)
+rb_file_s_basename(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE fname, fext, basename;
     const char *name, *p;
@@ -4708,7 +4722,7 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "rename", rb_file_s_rename, 2);
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
-    rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
+    rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path2, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);

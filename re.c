@@ -1906,9 +1906,10 @@ rb_reg_quote(str)
  */
 
 static VALUE
-rb_reg_s_quote(argc, argv)
+rb_reg_s_quote(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     VALUE str, kcode;
     int kcode_saved = reg_kcode;
@@ -2298,9 +2299,10 @@ match_setter(val)
  */
 
 static VALUE
-rb_reg_s_last_match(argc, argv)
+rb_reg_s_last_match(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     VALUE nth;
 

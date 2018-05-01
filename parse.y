@@ -2575,7 +2575,7 @@ static int   tokidx, toksiz = 0;
 
 #define LEAVE_BS 1
 
-static VALUE (*lex_gets)();	/* gets function */
+static VALUE (*lex_gets)(VALUE);	/* gets function */
 static VALUE lex_input;		/* non-nil if File */
 static VALUE lex_lastline;	/* gc protect */
 static char *lex_pbeg;
@@ -6282,11 +6282,11 @@ rb_id2name(id)
 
 static int
 symbols_i(key, value, ary)
-    char *key;
-    ID value;
-    VALUE ary;
+    ID key;
+    void* value;
+    void* ary;
 {
-    rb_ary_push(ary, ID2SYM(value));
+    rb_ary_push((VALUE)ary, ID2SYM((ID)value));
     return ST_CONTINUE;
 }
 

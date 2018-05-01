@@ -1090,6 +1090,7 @@ Init_signal()
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 
     install_sighandler(SIGINT, sighandler);
+
 #ifdef SIGHUP
     install_sighandler(SIGHUP, sighandler);
 #endif

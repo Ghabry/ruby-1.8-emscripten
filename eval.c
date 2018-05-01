@@ -95,6 +95,8 @@ char *strrchr _((const char*,const char));
 #include "vmsruby_private.h"
 #endif
 
+int rb_thread_join _((VALUE, double));
+
 #ifdef USE_CONTEXT
 
 NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
@@ -241,7 +243,7 @@ VALUE rb_cBinding;
 static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
-static VALUE rb_f_block_given_p _((void));
+static VALUE rb_f_block_given_p _((VALUE));
 static VALUE block_pass _((VALUE,NODE*));
 static void eval_check_tick _((void));
 
@@ -4516,9 +4518,10 @@ rb_exit(status)
  */
 
 VALUE
-rb_f_exit(argc, argv)
+rb_f_exit(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     VALUE status;
     int istatus;
@@ -4829,7 +4832,8 @@ rb_iterator_p()
 
 
 static VALUE
-rb_f_block_given_p()
+rb_f_block_given_p(xxx)
+	VALUE xxx;
 {
     if (ruby_frame->prev && ruby_frame->prev->iter == ITER_CUR && ruby_block)
 	return Qtrue;
@@ -5099,7 +5103,21 @@ rb_yield_0(val, self, klass, flags, avalue)
 		if (val == Qundef && node->nd_state != YIELD_FUNC_SVALUE)
 		    val = Qnil;
 	    }
+	    if (*node->nd_cfnc == each_with_index_i) {
+			result = each_with_index_i(val, node->nd_tval);
+		} else if (*node->nd_cfnc == grep_iter_i) {
+			result = grep_iter_i(val, node->nd_tval);
+		} else if (*node->nd_cfnc == any_i) {
+			result = any_i(val, node->nd_tval);
+		} else if (*node->nd_cfnc == max_i) {
+			result = max_i(val, node->nd_tval);
+		} else if (*node->nd_cfnc == min_i) {
+			result = min_i(val, node->nd_tval);
+		} else if (*node->nd_cfnc == min_ii) {
+			result = min_ii(val, node->nd_tval);
+		} else {
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
+	}
 	}
 	else {
 	    result = rb_eval(self, node);
@@ -5231,7 +5249,8 @@ rb_yield_splat(values)
 }
 
 static VALUE
-loop_i()
+loop_i(xxx)
+	VALUE* xxx;
 {
     for (;;) {
 	rb_yield_0(Qundef, 0, 0, 0, Qfalse);
@@ -5257,7 +5276,8 @@ loop_i()
  */
 
 static VALUE
-rb_f_loop()
+rb_f_loop(xxx)
+	VALUE xxx;
 {
     rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
     return Qnil;		/* dummy */
@@ -5475,10 +5495,11 @@ handle_rescue(self, node)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_rescue2(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALUE data2, ...)
+rb_rescue2(VALUE (*b_proc)(VALUE*), VALUE data1, VALUE (*r_proc)(VALUE,VALUE
+), VALUE data2, ...)
 #else
 rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
-    VALUE (*b_proc)(ANYARGS), (*r_proc)(ANYARGS);
+    VALUE (*b_proc)(VALUE), (*r_proc)(VALUE, VALUE);
     VALUE data1, data2;
     va_dcl
 #endif
@@ -5566,10 +5587,43 @@ rb_protect(proc, data, state)
 }
 
 VALUE
+rb_protect2(proc, data, state)
+    VALUE (*proc) _((const char*));
+    VALUE data;
+    int *state;
+{
+    VALUE result = Qnil;	/* OK */
+    int status;
+
+    PUSH_TAG(PROT_NONE);
+    cont_protect = (VALUE)rb_node_newnode(NODE_MEMO, cont_protect, 0, 0);
+    if ((status = EXEC_TAG()) == 0) {
+	result = (*proc)(data);
+    }
+    cont_protect = ((NODE *)cont_protect)->u1.value;
+    POP_TAG();
+    if (state) {
+	*state = status;
+    }
+    if (status != 0) {
+	return Qnil;
+    }
+
+    return result;
+}
+
+VALUE
+rb_yield_p(a)
+	void* a;
+{
+	return rb_yield((VALUE)a);
+}
+
+VALUE
 rb_ensure(b_proc, data1, e_proc, data2)
-    VALUE (*b_proc)();
+    VALUE (*b_proc)(void*);
     VALUE data1;
-    VALUE (*e_proc)();
+    VALUE (*e_proc)(void*);
     VALUE data2;
 {
     int state;
@@ -5769,6 +5823,80 @@ method_missing(obj, id, argc, argv, call_status)
 }
 
 static inline VALUE
+call_cfunc_argm2(func, recv, argc, argv)
+    VALUE (*func)(VALUE, VALUE);
+    VALUE recv;
+	int argc;
+    VALUE *argv;
+{
+	return (*func)(recv, rb_ary_new4(argc, argv));
+}
+
+static inline VALUE
+call_cfunc_argm1(func, recv, argc, argv)
+    VALUE (*func)(int, VALUE*, VALUE);
+    VALUE recv;
+	int argc;
+    VALUE *argv;
+{
+	return (*func)(argc, argv, recv);
+}
+
+static inline VALUE
+call_cfunc_arg0(func, recv, argv)
+    VALUE (*func)(VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv);
+}
+
+static inline VALUE
+call_cfunc_arg1(func, recv, argv)
+    VALUE (*func)(VALUE, VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv, argv[0]);
+}
+
+static inline VALUE
+call_cfunc_arg2(func, recv, argv)
+    VALUE (*func)(VALUE, VALUE, VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv, argv[0], argv[1]);
+}
+
+static inline VALUE
+call_cfunc_arg3(func, recv, argv)
+    VALUE (*func)(VALUE, VALUE, VALUE, VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv, argv[0], argv[1], argv[2]);
+}
+
+static inline VALUE
+call_cfunc_arg4(func, recv, argv)
+    VALUE (*func)(VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv, argv[0], argv[1], argv[2], argv[3]);
+}
+
+static inline VALUE
+call_cfunc_arg5(func, recv, argv)
+    VALUE (*func)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
+    VALUE recv;
+    VALUE *argv;
+{
+	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
+}
+
+static inline VALUE
 call_cfunc(func, recv, len, argc, argv)
     VALUE (*func)();
     VALUE recv;
@@ -5780,32 +5908,36 @@ call_cfunc(func, recv, len, argc, argv)
 		 argc, len);
     }
 
+    if (func == rb_obj_dummy) {
+	    return Qnil;
+    }
+
     switch (len) {
       case -2:
-	return (*func)(recv, rb_ary_new4(argc, argv));
+	return call_cfunc_argm2(func, recv, argc, argv);
 	break;
       case -1:
-	return (*func)(argc, argv, recv);
+	return call_cfunc_argm1(func, recv, argc, argv);
 	break;
       case 0:
-	return (*func)(recv);
+	return call_cfunc_arg0(func, recv, argv);
 	break;
       case 1:
-	return (*func)(recv, argv[0]);
+	return call_cfunc_arg1(func, recv, argv);
 	break;
       case 2:
-	return (*func)(recv, argv[0], argv[1]);
+	return call_cfunc_arg2(func, recv, argv);
 	break;
       case 3:
-	return (*func)(recv, argv[0], argv[1], argv[2]);
+	return call_cfunc_arg3(func, recv, argv);
 	break;
       case 4:
-	return (*func)(recv, argv[0], argv[1], argv[2], argv[3]);
+	return call_cfunc_arg4(func, recv, argv);
 	break;
       case 5:
-	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4]);
+	return call_cfunc_arg5(func, recv, argv);
 	break;
-      case 6:
+/*      case 6:
 	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4],
 		       argv[5]);
 	break;
@@ -5824,8 +5956,8 @@ call_cfunc(func, recv, len, argc, argv)
       case 10:
 	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4],
 		       argv[5], argv[6], argv[7], argv[8], argv[9]);
-	break;
-      case 11:
+	break;*/
+    /*  case 11:
 	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4],
 		       argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
 	break;
@@ -5847,7 +5979,7 @@ call_cfunc(func, recv, len, argc, argv)
       case 15:
 	return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4],
 		       argv[5], argv[6], argv[7], argv[8], argv[9], argv[10],
-		       argv[11], argv[12], argv[13], argv[14]);
+		       argv[11], argv[12], argv[13], argv[14]);*/
 	break;
       default:
 	rb_raise(rb_eArgError, "too many arguments (%d)", len);
@@ -6717,7 +6849,7 @@ rb_f_eval(argc, argv, self)
 /* function to call func under the specified class/module context */
 static VALUE
 exec_under(func, under, cbase, args)
-    VALUE (*func)();
+    VALUE (*func)(VALUE*);
     VALUE under, cbase;
     void *args;
 {
@@ -6789,9 +6921,9 @@ eval_under(under, self, src, file, line)
 
 static VALUE
 yield_under_i(self)
-    VALUE self;
+    VALUE* self;
 {
-    return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
+    return rb_yield_0((VALUE)self, (VALUE)self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
 }
 
 static VALUE
@@ -7134,9 +7266,10 @@ rb_load_protect(fname, wrap, state)
 
 
 static VALUE
-rb_f_load(argc, argv)
+rb_f_load(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     VALUE fname, wrap;
 
@@ -8021,7 +8154,7 @@ rb_f_local_variables()
 }
 
 static VALUE rb_f_catch _((VALUE,VALUE));
-NORETURN(static VALUE rb_f_throw _((int,VALUE*)));
+NORETURN(static VALUE rb_f_throw _((int,VALUE*, VALUE)));
 
 struct end_proc_data {
     void (*func)();
@@ -8453,9 +8586,10 @@ scope_dup(scope)
 }
 
 static void
-blk_mark(data)
-    struct BLOCK *data;
+blk_mark(dat)
+    void *dat;
 {
+	struct BLOCK* data = dat;
     while (data) {
 	rb_gc_mark_frame(&data->frame);
 	rb_gc_mark((VALUE)data->scope);
@@ -8471,9 +8605,10 @@ blk_mark(data)
 }
 
 static void
-frame_free(frame)
-    struct FRAME *frame;
+frame_free(fram)
+	void *fram;
 {
+	struct FRAME *frame = fram;
     struct FRAME *tmp;
 
     frame = frame->prev;
@@ -8485,9 +8620,10 @@ frame_free(frame)
 }
 
 static void
-blk_free(data)
-    struct BLOCK *data;
+blk_free(dat)
+    void *dat;
 {
+	struct BLOCK *data = dat;
     void *tmp;
 
     while (data) {
@@ -8828,7 +8964,8 @@ rb_f_lambda()
  */
 
 static VALUE
-proc_lambda()
+proc_lambda(xxx)
+	VALUE xxx;
 {
     return proc_alloc(rb_cProc, Qtrue);
 }
@@ -9263,9 +9400,10 @@ struct METHOD {
 };
 
 static void
-bm_mark(data)
-    struct METHOD *data;
+bm_mark(dat)
+    void* dat;
 {
+	struct METHOD *data = dat;
     rb_gc_mark(data->rklass);
     rb_gc_mark(data->klass);
     rb_gc_mark(data->recv);
@@ -10444,9 +10582,10 @@ timeofday()
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
 static void
-thread_mark(th)
-    rb_thread_t th;
+thread_mark(thh)
+    void* thh;
 {
+	rb_thread_t th = (rb_thread_t)thh;
     struct FRAME *frame;
     struct BLOCK *block;
 
@@ -10509,8 +10648,8 @@ thread_mark(th)
 static int
 mark_loading_thread(key, value, lev)
     ID key;
-    VALUE value;
-    int lev;
+    void* value;
+    void* lev;
 {
     rb_gc_mark(((rb_thread_t)value)->thread);
     return ST_CONTINUE;
@@ -11524,7 +11663,6 @@ rb_thread_select(max, read, write, except, timeout)
 }
 
 static int rb_thread_join0 _((rb_thread_t, double));
-int rb_thread_join _((VALUE, double));
 
 static int
 rb_thread_join0(th, limit)
@@ -13136,9 +13274,10 @@ rb_thread_key_p(thread, id)
 static int
 thread_keys_i(key, value, ary)
     ID key;
-    VALUE value, ary;
+    void* value;
+	void* ary;
 {
-    rb_ary_push(ary, ID2SYM(key));
+    rb_ary_push((VALUE)ary, ID2SYM(key));
     return ST_CONTINUE;
 }
 
@@ -13229,11 +13368,11 @@ cc_purge(cc)
 
 static void
 cc_mark(cc)
-    rb_thread_t cc;
+    void* cc;
 {
     /* mark this continuation's stack only if its parent thread is still alive */
-    cc_purge(cc);
-    thread_mark(cc);
+    cc_purge((rb_thread_t)cc);
+    thread_mark((rb_thread_t)cc);
 }
 
 static rb_thread_t
@@ -13846,9 +13985,10 @@ rb_catch(tag, func, data)
  */
 
 static VALUE
-rb_f_throw(argc, argv)
+rb_f_throw(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE tag, value;
     struct tag *tt = prot_tag;

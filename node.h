@@ -139,7 +139,7 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	long argc;
-	VALUE value;
+	VALUE* value;
     } u2;
     union {
 	struct RNode *node;

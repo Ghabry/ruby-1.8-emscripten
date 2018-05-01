@@ -75,7 +75,7 @@ int  rb_io_mode_flags _((const char*));
 int  rb_io_modenum_flags _((int));
 void rb_io_check_writable _((rb_io_t*));
 void rb_io_check_readable _((rb_io_t*));
-void rb_io_fptr_finalize _((rb_io_t*));
+void rb_io_fptr_finalize _((void*));
 void rb_io_synchronized _((rb_io_t*));
 void rb_io_check_initialized _((rb_io_t*));
 void rb_io_check_closed _((rb_io_t*));

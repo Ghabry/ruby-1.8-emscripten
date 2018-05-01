@@ -35,7 +35,7 @@
 #endif
 
 void re_free_registers _((struct re_registers*));
-void rb_io_fptr_finalize _((struct rb_io_t*));
+void rb_io_fptr_finalize _((void*));
 
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
@@ -601,9 +601,12 @@ mark_source_filename(f)
 }
 
 static int
-sweep_source_filename(key, value)
-    char *key, *value;
+sweep_source_filename(key, valu, lev)
+    ID key;
+	void *valu;
+	void *lev;
 {
+	char* value = valu;
     if (*value) {
 	*value = 0;
 	return ST_CONTINUE;
@@ -700,10 +703,10 @@ rb_gc_mark_locations(start, end)
 static int
 mark_entry(key, value, lev)
     ID key;
-    VALUE value;
-    int lev;
+    void* value;
+    void* lev;
 {
-    gc_mark(value, lev);
+    gc_mark((VALUE)value, (int)lev);
     return ST_CONTINUE;
 }
 
@@ -718,17 +721,18 @@ mark_tbl(tbl, lev)
 
 void
 rb_mark_tbl(tbl)
-    st_table *tbl;
+    void *tbl;
 {
-    mark_tbl(tbl, 0);
+    mark_tbl((st_table*)tbl, 0);
 }
 
 static int
 mark_key(key, value, lev)
-    VALUE key, value;
-    int lev;
+    VALUE key;
+	void* value;
+    void* lev;
 {
-    gc_mark(key, lev);
+    gc_mark(key, (int)lev);
     return ST_CONTINUE;
 }
 
@@ -750,12 +754,12 @@ rb_mark_set(tbl)
 
 static int
 mark_keyvalue(key, value, lev)
-    VALUE key;
-    VALUE value;
-    int lev;
+    ID key;
+    void* value;
+    void* lev;
 {
     gc_mark(key, lev);
-    gc_mark(value, lev);
+    gc_mark((VALUE)value, (int)lev);
     return ST_CONTINUE;
 }
 

@@ -35,16 +35,34 @@ struct st_table_entry {
      */
 static int numcmp(long, long);
 static int numhash(long);
+
+static int numcmp_p(void* a, void* b) {
+    return numcmp((long)a, (long)b);
+}
+
+static int numhash_p(void* a) {
+    return numhash((long)a);
+}
+
 static struct st_hash_type type_numhash = {
-    numcmp,
-    numhash,
+    numcmp_p,
+    numhash_p,
 };
 
 /* extern int strcmp(const char *, const char *); */
 static int strhash(const char *);
+
+static int strcmp_p(void* p, void* q) {
+    return strcmp(p, q);
+}
+
+static int strhash_p(void* p) {
+    return strhash(p);
+}
+
 static struct st_hash_type type_strhash = {
-    strcmp,
-    strhash,
+    strcmp_p,
+    strhash_p,
 };
 
 static void rehash(st_table *);
@@ -200,9 +218,10 @@ st_init_strtable_with_size(size)
 }
 
 void
-st_free_table(table)
-    st_table *table;
+st_free_table(tabl)
+    void *tabl;
 {
+	st_table *table = tabl;
     register st_table_entry *ptr, *next;
     int i;
 
@@ -455,9 +474,11 @@ st_delete_safe(table, key, value, never)
 
 static int
 delete_never(key, value, never)
-    st_data_t key, value, never;
+    ID key;
+	void* value;
+	void* never;
 {
-    if (value == never) return ST_DELETE;
+    if ((st_data_t)value == (st_data_t)never) return ST_DELETE;
     return ST_CONTINUE;
 }
 
@@ -475,7 +496,7 @@ st_cleanup_safe(table, never)
 int
 st_foreach(table, func, arg)
     st_table *table;
-    int (*func)();
+    int (*func)(ID, void*, void*);
     st_data_t arg;
 {
     st_table_entry *ptr, *last, *tmp;

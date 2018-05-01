@@ -655,11 +655,12 @@ wait_each(pid, status, data)
 
 static int
 waitall_each(pid, status, ary)
-    int pid, status;
-    VALUE ary;
+    ID pid;
+	void* status;
+    void* ary;
 {
-    last_status_set(status, pid);
-    rb_ary_push(ary, rb_assoc_new(INT2NUM(pid), rb_last_status));
+    last_status_set((int)status, (int)pid);
+    rb_ary_push((VALUE)ary, rb_assoc_new(INT2NUM((int)pid), rb_last_status));
     return ST_DELETE;
 }
 #endif
@@ -1266,9 +1267,10 @@ proc_exec_args(earg)
  */
 
 VALUE
-rb_f_exec(argc, argv)
+rb_f_exec(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE prog = 0;
     VALUE tmp;
@@ -1470,9 +1472,10 @@ rb_syswait(pid)
  */
 
 static VALUE
-rb_f_system(argc, argv)
+rb_f_system(argc, argv, xx)
     int argc;
     VALUE *argv;
+	VALUE xx;
 {
     int status;
 #if defined(__EMX__)
@@ -1619,9 +1622,10 @@ rb_f_system(argc, argv)
  */
 
 static VALUE
-rb_f_sleep(argc, argv)
+rb_f_sleep(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     int beg, end;
 

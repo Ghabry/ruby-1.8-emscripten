@@ -600,13 +600,14 @@ typedef VALUE rb_block_call_func _((VALUE, VALUE));
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
+VALUE rb_yield_p _((void*));
 VALUE rb_yield_values __((int n, ...));
 VALUE rb_yield_splat _((VALUE));
 int rb_block_given_p _((void));
 void rb_need_block _((void));
 VALUE rb_iterate _((VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE));
-VALUE rb_rescue _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
-VALUE rb_rescue2 __((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...));
+VALUE rb_rescue _((VALUE(*)(VALUE*),VALUE,VALUE(*)(VALUE*),VALUE));
+VALUE rb_rescue2 __((VALUE(*)(VALUE*),VALUE,VALUE(*)(VALUE,VALUE),VALUE,...));
 VALUE rb_ensure _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
 VALUE rb_catch _((const char*,VALUE(*)(ANYARGS),VALUE));
 NORETURN(void rb_throw _((const char*,VALUE)));
@@ -785,6 +786,21 @@ int is_ruby_native_thread _((void));
 #ifdef HAVE_NATIVETHREAD_KILL
 void ruby_native_thread_kill _((int));
 #endif
+
+VALUE
+rb_obj_dummy();
+VALUE
+each_with_index_i(VALUE, VALUE*);
+VALUE
+grep_iter_i(VALUE, VALUE*);
+VALUE
+any_i(VALUE, VALUE*);
+VALUE
+max_i(VALUE, VALUE*);
+VALUE
+min_i(VALUE, VALUE*);
+VALUE
+min_ii(VALUE, VALUE*);
 
 #if defined(__cplusplus)
 #if 0

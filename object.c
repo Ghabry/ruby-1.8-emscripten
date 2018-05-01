@@ -335,16 +335,17 @@ rb_inspect(obj)
 }
 
 static int
-inspect_i(id, value, str)
+inspect_i(id, value, st)
     ID id;
-    VALUE value;
-    VALUE str;
+    void* value;
+    void* st;
 {
+	VALUE str = (VALUE)st;
     VALUE str2;
     const char *ivname;
 
     /* need not to show internal data */
-    if (CLASS_OF(value) == 0) return ST_CONTINUE;
+    if (CLASS_OF((VALUE)value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (RSTRING(str)->ptr[0] == '-') { /* first element */
 	RSTRING(str)->ptr[0] = '#';
@@ -356,7 +357,7 @@ inspect_i(id, value, str)
     ivname = rb_id2name(id);
     rb_str_cat2(str, ivname);
     rb_str_cat2(str, "=");
-    str2 = rb_inspect(value);
+    str2 = rb_inspect((VALUE)value);
     rb_str_append(str, str2);
     OBJ_INFECT(str, str2);
 
@@ -655,7 +656,7 @@ rb_obj_tap(obj)
  * Not documented
  */
 
-static VALUE
+VALUE
 rb_obj_dummy()
 {
     return Qnil;

@@ -70,7 +70,7 @@ grep_i(i, arg)
     return Qnil;
 }
 
-static VALUE
+VALUE
 grep_iter_i(i, arg)
     VALUE i, *arg;
 {
@@ -915,7 +915,7 @@ enum_all(obj)
     return result;
 }
 
-static VALUE
+VALUE
 any_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -1062,7 +1062,7 @@ enum_none(obj)
     return result;
 }
 
-static VALUE
+VALUE
 min_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -1081,7 +1081,7 @@ min_i(i, memo)
     return Qnil;
 }
 
-static VALUE
+VALUE
 min_ii(i, memo)
     VALUE i;
     VALUE *memo;
@@ -1140,7 +1140,7 @@ enum_min(obj)
  *     a.max {|a,b| a.length <=> b.length }   #=> "albatross"
  */
 
-static VALUE
+VALUE
 max_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -1474,7 +1474,7 @@ enum_member(obj, val)
     return memo[1];
 }
 
-static VALUE
+VALUE
 each_with_index_i(val, memo)
     VALUE val;
     VALUE *memo;

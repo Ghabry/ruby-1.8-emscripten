@@ -156,7 +156,7 @@ RUBY_EXTERN struct RNode *ruby_current_node;
 void ruby_set_current_source _((void));
 NORETURN(void rb_exc_raise _((VALUE)));
 NORETURN(void rb_exc_fatal _((VALUE)));
-VALUE rb_f_exit _((int,VALUE*));
+VALUE rb_f_exit _((int,VALUE*,VALUE));
 VALUE rb_f_abort _((int,VALUE*));
 void rb_remove_method _((VALUE, const char*));
 #define rb_disable_super(klass, name) ((void)0)
@@ -201,6 +201,7 @@ VALUE rb_f_lambda _((void));
 VALUE rb_proc_call _((VALUE, VALUE));
 VALUE rb_obj_method _((VALUE, VALUE));
 VALUE rb_protect _((VALUE (*)(VALUE), VALUE, int*));
+VALUE rb_protect2 _((VALUE (*)(const char*), VALUE, int*));
 void rb_set_end_proc _((void (*)(VALUE), VALUE));
 void rb_mark_end_proc _((void));
 void rb_exec_end_proc _((void));
@@ -257,7 +258,7 @@ size_t ruby_stack_length _((VALUE**));
 int rb_during_gc _((void));
 char *rb_source_filename _((const char*));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
-void rb_mark_tbl _((struct st_table*));
+void rb_mark_tbl _((void*));
 void rb_mark_set _((struct st_table*));
 void rb_mark_hash _((struct st_table*));
 void rb_gc_mark_maybe _((VALUE));
@@ -271,8 +272,8 @@ VALUE rb_gc_enable _((void));
 VALUE rb_gc_disable _((void));
 VALUE rb_gc_start _((void));
 /* hash.c */
-void st_foreach_safe _((struct st_table *, int (*)(ANYARGS), unsigned long));
-void rb_hash_foreach _((VALUE, int (*)(ANYARGS), VALUE));
+void st_foreach_safe _((struct st_table *, int (*)(ID, void*, void*), unsigned long));
+void rb_hash_foreach _((VALUE, int (*)(VALUE, VALUE, void*), VALUE));
 VALUE rb_hash _((VALUE));
 VALUE rb_hash_new _((void));
 VALUE rb_hash_freeze _((VALUE));
@@ -306,7 +307,7 @@ VALUE rb_gets _((void));
 void rb_write_error _((const char*));
 void rb_write_error2 _((const char*, long));
 /* marshal.c */
-VALUE rb_marshal_dump _((VALUE, VALUE));
+VALUE rb_marshal_dump _((int, VALUE*,VALUE));
 VALUE rb_marshal_load _((VALUE));
 /* numeric.c */
 void rb_num_zerodiv _((void));
@@ -368,7 +369,7 @@ void rb_lastline_set _((VALUE));
 VALUE rb_sym_all_symbols _((void));
 /* process.c */
 int rb_proc_exec _((const char*));
-VALUE rb_f_exec _((int,VALUE*));
+VALUE rb_f_exec _((int,VALUE*,VALUE));
 int rb_waitpid _((int,int*,int));
 void rb_syswait _((int));
 VALUE rb_proc_times _((VALUE));
@@ -422,7 +423,7 @@ void rb_trap_exec _((void));
 const char *ruby_signal_name _((int));
 void ruby_default_signal _((int));
 /* sprintf.c */
-VALUE rb_f_sprintf _((int, VALUE*));
+VALUE rb_f_sprintf _((int, VALUE*, VALUE));
 VALUE rb_str_format _((int, VALUE*, VALUE));
 /* string.c */
 VALUE rb_str_new _((const char*, long));

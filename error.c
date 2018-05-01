@@ -752,7 +752,7 @@ name_err_mesg_to_str(obj)
 	args[0] = mesg;
 	args[1] = ptr[2];
 	args[2] = d;
-	mesg = rb_f_sprintf(3, args);
+	mesg = rb_f_sprintf(3, args, 0);
     }
     if (OBJ_TAINTED(obj)) OBJ_TAINT(mesg);
     return mesg;

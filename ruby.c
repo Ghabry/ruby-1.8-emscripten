@@ -384,7 +384,7 @@ require_libraries()
 	int state;
 
 	ruby_current_node = 0;
-	rb_protect((VALUE (*)(VALUE))rb_require, (VALUE)list->name, &state);
+	rb_protect2(rb_require, (VALUE)list->name, &state);
 	if (state) rb_jump_tag(state);
 	tmp = list->next;
 	free(list->name);

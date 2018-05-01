@@ -245,9 +245,10 @@ sign_bits(base, p)
  */
 
 VALUE
-rb_f_sprintf(argc, argv)
+rb_f_sprintf(argc, argv, xxx)
     int argc;
     VALUE *argv;
+    VALUE xxx;
 {
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }

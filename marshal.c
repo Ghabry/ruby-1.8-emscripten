@@ -451,13 +451,14 @@ w_uclass(obj, base_klass, arg)
 }
 
 static int
-w_obj_each(id, value, arg)
+w_obj_each(id, value, ar)
     ID id;
-    VALUE value;
-    struct dump_call_arg *arg;
+    void* value;
+    void* ar;
 {
+	struct dump_call_arg *arg = ar;
     w_symbol(id, arg->arg);
-    w_object(value, arg->arg, arg->limit);
+    w_object((VALUE)value, arg->arg, arg->limit);
     return ST_CONTINUE;
 }
 
@@ -1444,9 +1445,10 @@ clear_load_arg(arg)
  * is deserialized.
  */
 static VALUE
-marshal_load(argc, argv)
+marshal_load(argc, argv, xxx)
     int argc;
     VALUE *argv;
+	VALUE xxx;
 {
     VALUE port, proc;
     int major, minor, taint = Qfalse;
@@ -1558,14 +1560,16 @@ Init_marshal()
 }
 
 VALUE
-rb_marshal_dump(obj, port)
-    VALUE obj, port;
+rb_marshal_dump(obj, port, xxx)
+	int obj;
+	VALUE* port;
+	VALUE xxx;
 {
     int argc = 1;
     VALUE argv[2];
 
-    argv[0] = obj;
-    argv[1] = port;
+    argv[0] = (int)obj;
+    argv[1] = (VALUE)port;
     if (!NIL_P(port)) argc = 2;
     return marshal_dump(argc, argv);
 }
